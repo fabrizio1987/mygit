@@ -15,11 +15,15 @@ import org.springframework.batch.item.file.FlatFileItemReader;
 import org.springframework.batch.item.file.mapping.BeanWrapperFieldSetMapper;
 import org.springframework.batch.item.file.mapping.DefaultLineMapper;
 import org.springframework.batch.item.file.transform.DelimitedLineTokenizer;
+import org.springframework.batch.item.file.transform.FixedLengthTokenizer;
+import org.springframework.batch.item.file.transform.Range;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.jdbc.core.JdbcTemplate;
+
+import rates.entity.Rate;
 
 @Configuration
 @EnableBatchProcessing
@@ -37,19 +41,26 @@ public class BatchConfiguration {
 	
 	// tag::readerwriterprocessor[]
 		@Bean
-		public FlatFileItemReader<Person> reader() {
-			FlatFileItemReader<Person> reader = new FlatFileItemReader<Person>();
-			reader.setResource(new ClassPathResource("sample-data.csv"));
-			reader.setLineMapper(new DefaultLineMapper<Person>() {
+		public FlatFileItemReader<RateLine> reader() {
+			FlatFileItemReader<RateLine> reader = new FlatFileItemReader<RateLine>();
+			reader.setResource(new ClassPathResource("rates-2016-01-01.DAT"));
+			reader.setLineMapper(new DefaultLineMapper<RateLine>() {
 				{
-					setLineTokenizer(new DelimitedLineTokenizer() {
+					Range[] range = new Range[4];
+					range[0] = new Range(1, 8);
+					range[1] = new Range(9, 16);
+					range[2] = new Range(17, 19);
+					range[3] = new Range(20, 22);
+					setLineTokenizer(new FixedLengthTokenizer() {
 						{
-							setNames(new String[] { "firstName", "lastName" });
+							setNames(new String[] { "date", "rate", "buy", "sell" });
+							
+							setColumns(range);
 						}
 					});
-					setFieldSetMapper(new BeanWrapperFieldSetMapper<Person>() {
+					setFieldSetMapper(new BeanWrapperFieldSetMapper<RateLine>() {
 						{
-							setTargetType(Person.class);
+							setTargetType(RateLine.class);
 						}
 					});
 				}
@@ -58,15 +69,15 @@ public class BatchConfiguration {
 		}
 
 		@Bean
-		public PersonItemProcessor processor() {
-			return new PersonItemProcessor();
+		public RateItemProcessor processor() {
+			return new RateItemProcessor();
 		}
 
 		@Bean
-		public JdbcBatchItemWriter<Person> writer() {
-			JdbcBatchItemWriter<Person> writer = new JdbcBatchItemWriter<Person>();
-			writer.setItemSqlParameterSourceProvider(new BeanPropertyItemSqlParameterSourceProvider<Person>());
-			writer.setSql("INSERT INTO people (first_name, last_name) VALUES (:firstName, :lastName)");
+		public JdbcBatchItemWriter<Rate> writer() {
+			JdbcBatchItemWriter<Rate> writer = new JdbcBatchItemWriter<Rate>();
+			writer.setItemSqlParameterSourceProvider(new BeanPropertyItemSqlParameterSourceProvider<Rate>());
+			writer.setSql("INSERT INTO rate (buyCurrency, rate, sellCurrency, validDate) VALUES (:buyCurrency, :rate, :sellCurrency, :validDate)");
 			writer.setDataSource(dataSource);
 			return writer;
 		}
@@ -84,13 +95,13 @@ public class BatchConfiguration {
 		// tag::jobstep[]
 		@Bean
 		public Job importUserJob() {
-			return jobBuilderFactory.get("importUserJob").incrementer(new RunIdIncrementer()).listener(listener())
+			return jobBuilderFactory.get("importRatesJob").incrementer(new RunIdIncrementer()).listener(listener())
 					.flow(step1()).end().build();
 		}
 
 		@Bean
 		public Step step1() {
-			return stepBuilderFactory.get("step1").<Person, Person> chunk(10).reader(reader()).processor(processor())
+			return stepBuilderFactory.get("step1").<RateLine, Rate> chunk(10).reader(reader()).processor(processor())
 					.writer(writer()).build();
 		}
 		// end::jobstep[]

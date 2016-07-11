@@ -32,6 +32,17 @@ public class Rate {
 	@Column
 	private String sellCurrency;
 	
+	public Rate() {
+		// TODO Auto-generated constructor stub
+	}
+	
+	public Rate(String buyCurrency,  BigDecimal rate, String sellCurrency, Date validDate) {
+		super();
+		this.buyCurrency = buyCurrency;
+		this.sellCurrency = sellCurrency;
+		this.validDate = validDate;
+		this.rate = rate;
+	}
 	@Column
 	@Temporal(TemporalType.DATE)
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)

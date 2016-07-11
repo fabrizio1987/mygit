@@ -30,6 +30,8 @@ public class HelloRestController {
 
 		return "Welcome to RestTemplate Example.";
 	}
+	
+	//mappare anche altri metodi http
 
 	@RequestMapping("/rest/{rate}")
 	public RateList message(@PathVariable String rate) {// REST Endpoint.
