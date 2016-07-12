@@ -36,6 +36,7 @@
 
 	<!-- create job-meta tables automatically -->
 	<jdbc:initialize-database data-source="dataSource">
+		<jdbc:script location="classpath:/create_entropay_db.sql" />
 		<jdbc:script location="classpath:/org/springframework/batch/core/schema-drop-mysql.sql" />
 		<jdbc:script location="classpath:/org/springframework/batch/core/schema-mysql.sql" />
 	</jdbc:initialize-database>

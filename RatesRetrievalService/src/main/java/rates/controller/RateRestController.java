@@ -1,6 +1,8 @@
 package rates.controller;
 
 import java.math.BigDecimal;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 
@@ -20,60 +22,37 @@ import rates.entity.RateList;
 import rates.service.RateService;
 
 @RestController
-public class HelloRestController {
+public class RateRestController {
 
 	@Autowired
 	RateService rateService;
-
-	@RequestMapping("/")
-	public String welcome() {// Welcome page, non-rest
-
-		return "Welcome to RestTemplate Example.";
-	}
 	
-	//mappare anche altri metodi http
-
-	@RequestMapping("/rest/{rate}")
-	public RateList message(@PathVariable String rate) {// REST Endpoint.
-
-		Rate r = new Rate();
-		r.setRate(new BigDecimal(5));
-
-		// rateService.insertRate(r);
-
-		List<Rate> rList = rateService.getAllRates();
-
-		Rate r1 = new Rate();
-		// r1.setId(2);
-		r1.setRate(new BigDecimal(10));
-		r1.setValidDate(new Date());
-		rList.add(r1);
-
-		RateList rateList = new RateList();
-		rateList.setRateList(rList);
-
-		return rateList;
-	}
-
-	@RequestMapping("/batch/start")
-	public String startTask() {
-
-		try {
-			startJob();
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			return "job error";
-		}
-
-		return "job started";
-	}
-
 	@Autowired
 	private JobLauncher jobLauncher;
 
 	@Autowired
 	private Job job;
+	
+
+	/**
+	 * Start the batch job.
+	 *
+	 * @return the string
+	 */
+	@RequestMapping("/batch/start")
+	public String startTask() {
+		
+		try {
+			startJob();
+			return "job started";
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+			return "job error";
+		}		
+	}
+
+	
 
 	public boolean startJob() throws Exception {
 
@@ -95,6 +74,56 @@ public class HelloRestController {
 			System.err.println("errore job " + ex);
 		}
 
-		return false;
+		return result;
 	}
+
+	@RequestMapping("/")
+	public String welcome() {
+
+		return "Welcome to RestTemplate Example.";
+	}
+	
+	
+
+	@RequestMapping("/rest/{rate}")
+	public RateList message(@PathVariable String rate) {
+
+		Rate r = new Rate();
+		r.setRate(new BigDecimal(5));
+
+		// rateService.insertRate(r);
+
+		List<Rate> rList = rateService.getAllRates();
+
+		Rate r1 = new Rate();
+		// r1.setId(2);
+		r1.setRate(new BigDecimal(10));
+		r1.setValidDate(new Date());
+		rList.add(r1);
+
+		RateList rateList = new RateList();
+		rateList.setRateList(rList);
+
+		return rateList;
+	}
+	
+	
+	@RequestMapping("/rest/rates/{date}")
+	public RateList getRatesByDate(@PathVariable String date) {	
+
+		SimpleDateFormat sf = new SimpleDateFormat("yyyy-MM-dd");
+		Date d = null;
+		try {
+			d = sf.parse(date);
+		} catch (ParseException e) {
+			e.printStackTrace();
+		}
+		List<Rate> rList = rateService.getRatesByDate(d);
+		RateList rateList = new RateList();
+		rateList.setRateList(rList);
+
+		return rateList;
+		
+	}
+
 }

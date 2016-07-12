@@ -1,10 +1,11 @@
 package rates.entity;
 
+import java.util.LinkedList;
 import java.util.List;
 
 public class RateList {
 	
-	private List<Rate> rateList;
+	private List<Rate> rateList = new LinkedList<Rate>();
 	
 	public List<Rate> getRateList() {
 		return rateList;

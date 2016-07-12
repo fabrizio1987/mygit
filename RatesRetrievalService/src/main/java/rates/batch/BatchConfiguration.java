@@ -37,132 +37,137 @@ public class BatchConfiguration {
 
 	@Autowired
 	public DataSource dataSource;
-	
-	
+
 	// tag::readerwriterprocessor[]
-		@Bean
-		public FlatFileItemReader<RateLine> reader() {
-			FlatFileItemReader<RateLine> reader = new FlatFileItemReader<RateLine>();
-			reader.setResource(new ClassPathResource("rates-2016-01-01.DAT"));
-			reader.setLineMapper(new DefaultLineMapper<RateLine>() {
-				{
-					Range[] range = new Range[4];
-					range[0] = new Range(1, 8);
-					range[1] = new Range(9, 16);
-					range[2] = new Range(17, 19);
-					range[3] = new Range(20, 22);
-					setLineTokenizer(new FixedLengthTokenizer() {
-						{
-							setNames(new String[] { "date", "rate", "buy", "sell" });
-							
-							setColumns(range);
-						}
-					});
-					setFieldSetMapper(new BeanWrapperFieldSetMapper<RateLine>() {
-						{
-							setTargetType(RateLine.class);
-						}
-					});
-				}
-			});
-			return reader;
-		}
+	@Bean
+	public FlatFileItemReader<RateLine> reader() {
+		FlatFileItemReader<RateLine> reader = new FlatFileItemReader<RateLine>();
+		reader.setResource(new ClassPathResource("rates-2016-01-01.DAT"));
+		reader.setLineMapper(new DefaultLineMapper<RateLine>() {
+			{
+				Range[] range = new Range[4];
+				range[0] = new Range(1, 8);
+				range[1] = new Range(9, 16);
+				range[2] = new Range(17, 19);
+				range[3] = new Range(20, 22);
+				setLineTokenizer(new FixedLengthTokenizer() {
+					{
+						setNames(new String[] { "date", "rate", "buy", "sell" });
 
-		@Bean
-		public RateItemProcessor processor() {
-			return new RateItemProcessor();
-		}
+						setColumns(range);
+					}
+				});
+				setFieldSetMapper(new BeanWrapperFieldSetMapper<RateLine>() {
+					{
+						setTargetType(RateLine.class);
+					}
+				});
+			}
+		});
+		return reader;
+	}
 
-		@Bean
-		public JdbcBatchItemWriter<Rate> writer() {
-			JdbcBatchItemWriter<Rate> writer = new JdbcBatchItemWriter<Rate>();
-			writer.setItemSqlParameterSourceProvider(new BeanPropertyItemSqlParameterSourceProvider<Rate>());
-			writer.setSql("INSERT INTO rate (buyCurrency, rate, sellCurrency, validDate) VALUES (:buyCurrency, :rate, :sellCurrency, :validDate)");
-			writer.setDataSource(dataSource);
-			return writer;
-		}
-		// end::readerwriterprocessor[]
+	@Bean
+	public RateItemProcessor processor() {
+		return new RateItemProcessor();
+	}
 
-		// tag::listener[]
+	@Bean
+	public JdbcBatchItemWriter<Rate> writer() {
+		JdbcBatchItemWriter<Rate> writer = new JdbcBatchItemWriter<Rate>();
+		writer.setItemSqlParameterSourceProvider(new BeanPropertyItemSqlParameterSourceProvider<Rate>());
+		writer.setSql(
+				"INSERT INTO rate (buyCurrency, rate, sellCurrency, validDate) VALUES (:buyCurrency, :rate, :sellCurrency, :validDate)");
+		writer.setDataSource(dataSource);
+		return writer;
+	}
+	// end::readerwriterprocessor[]
 
-		@Bean
-		public JobExecutionListener listener() {
-			return new JobCompletionNotificationListener(new JdbcTemplate(dataSource));
-		}
+	// tag::listener[]
 
-		// end::listener[]
+	@Bean
+	public JobExecutionListener listener() {
+		return new JobCompletionNotificationListener(new JdbcTemplate(dataSource));
+	}
 
-		// tag::jobstep[]
-		@Bean
-		public Job importUserJob() {
-			return jobBuilderFactory.get("importRatesJob").incrementer(new RunIdIncrementer()).listener(listener())
-					.flow(step1()).end().build();
-		}
+	// end::listener[]
 
-		@Bean
-		public Step step1() {
-			return stepBuilderFactory.get("step1").<RateLine, Rate> chunk(10).reader(reader()).processor(processor())
-					.writer(writer()).build();
-		}
-		// end::jobstep[]
+	// tag::jobstep[]
+	@Bean
+	public Job importUserJob() {
+		return jobBuilderFactory.get("importRatesJob").incrementer(new RunIdIncrementer()).listener(listener())
+				.flow(step1()).end().build();
+	}
 
-//	// tag::readerwriterprocessor[]
-//	@Bean
-//	public FlatFileItemReader<Person> reader() {
-//		FlatFileItemReader<Person> reader = new FlatFileItemReader<Person>();
-//		reader.setResource(new ClassPathResource("sample-data.csv"));
-//		reader.setLineMapper(new DefaultLineMapper<Person>() {
-//			{
-//				setLineTokenizer(new DelimitedLineTokenizer() {
-//					{
-//						setNames(new String[] { "firstName", "lastName" });
-//					}
-//				});
-//				setFieldSetMapper(new BeanWrapperFieldSetMapper<Person>() {
-//					{
-//						setTargetType(Person.class);
-//					}
-//				});
-//			}
-//		});
-//		return reader;
-//	}
-//
-//	@Bean
-//	public PersonItemProcessor processor() {
-//		return new PersonItemProcessor();
-//	}
-//
-//	@Bean
-//	public JdbcBatchItemWriter<Person> writer() {
-//		JdbcBatchItemWriter<Person> writer = new JdbcBatchItemWriter<Person>();
-//		writer.setItemSqlParameterSourceProvider(new BeanPropertyItemSqlParameterSourceProvider<Person>());
-//		writer.setSql("INSERT INTO people (first_name, last_name) VALUES (:firstName, :lastName)");
-//		writer.setDataSource(dataSource);
-//		return writer;
-//	}
-//	// end::readerwriterprocessor[]
-//
-//	// tag::listener[]
-//
-//	@Bean
-//	public JobExecutionListener listener() {
-//		return new JobCompletionNotificationListener(new JdbcTemplate(dataSource));
-//	}
-//
-//	// end::listener[]
-//
-//	// tag::jobstep[]
-//	@Bean
-//	public Job importUserJob() {
-//		return jobBuilderFactory.get("importUserJob").incrementer(new RunIdIncrementer()).listener(listener())
-//				.flow(step1()).end().build();
-//	}
-//
-//	@Bean
-//	public Step step1() {
-//		return stepBuilderFactory.get("step1").<Person, Person> chunk(10).reader(reader()).processor(processor())
-//				.writer(writer()).build();
-//	}
-//	// end::jobstep[]
+	@Bean
+	public Step step1() {
+		return stepBuilderFactory.get("step1").<RateLine, Rate> chunk(10).reader(reader()).processor(processor())
+				.writer(writer()).build();
+	}
+	// end::jobstep[]
+
+	// // tag::readerwriterprocessor[]
+	// @Bean
+	// public FlatFileItemReader<Person> reader() {
+	// FlatFileItemReader<Person> reader = new FlatFileItemReader<Person>();
+	// reader.setResource(new ClassPathResource("sample-data.csv"));
+	// reader.setLineMapper(new DefaultLineMapper<Person>() {
+	// {
+	// setLineTokenizer(new DelimitedLineTokenizer() {
+	// {
+	// setNames(new String[] { "firstName", "lastName" });
+	// }
+	// });
+	// setFieldSetMapper(new BeanWrapperFieldSetMapper<Person>() {
+	// {
+	// setTargetType(Person.class);
+	// }
+	// });
+	// }
+	// });
+	// return reader;
+	// }
+	//
+	// @Bean
+	// public PersonItemProcessor processor() {
+	// return new PersonItemProcessor();
+	// }
+	//
+	// @Bean
+	// public JdbcBatchItemWriter<Person> writer() {
+	// JdbcBatchItemWriter<Person> writer = new JdbcBatchItemWriter<Person>();
+	// writer.setItemSqlParameterSourceProvider(new
+	// BeanPropertyItemSqlParameterSourceProvider<Person>());
+	// writer.setSql("INSERT INTO people (first_name, last_name) VALUES
+	// (:firstName, :lastName)");
+	// writer.setDataSource(dataSource);
+	// return writer;
+	// }
+	// // end::readerwriterprocessor[]
+	//
+	// // tag::listener[]
+	//
+	// @Bean
+	// public JobExecutionListener listener() {
+	// return new JobCompletionNotificationListener(new
+	// JdbcTemplate(dataSource));
+	// }
+	//
+	// // end::listener[]
+	//
+	// // tag::jobstep[]
+	// @Bean
+	// public Job importUserJob() {
+	// return jobBuilderFactory.get("importUserJob").incrementer(new
+	// RunIdIncrementer()).listener(listener())
+	// .flow(step1()).end().build();
+	// }
+	//
+	// @Bean
+	// public Step step1() {
+	// return stepBuilderFactory.get("step1").<Person, Person>
+	// chunk(10).reader(reader()).processor(processor())
+	// .writer(writer()).build();
+	// }
+	// // end::jobstep[]
 }
