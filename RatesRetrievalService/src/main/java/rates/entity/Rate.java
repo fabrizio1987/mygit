@@ -119,11 +119,6 @@ public class Rate {
 				return false;
 		} else if (!file.equals(other.file))
 			return false;
-		if (id == null) {
-			if (other.id != null)
-				return false;
-		} else if (!id.equals(other.id))
-			return false;
 		if (rate == null) {
 			if (other.rate != null)
 				return false;
